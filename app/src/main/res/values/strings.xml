@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">CurrentC</string>
+    <string name="logged_in_title">You’re logged in!</string>
+    <string name="logged_out_title">You’re logged out.</string>
+    <string name="log_in_button">Log In</string>
+    <string name="log_out_button">Log Out</string>
+    <string name="name_label">Name</string>
+    <string name="email_label">Email</string>
 </resources>
