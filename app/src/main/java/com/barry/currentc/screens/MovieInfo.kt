@@ -53,7 +53,7 @@ fun MovieInfo(
 //        getMovieResult = onLoad(769) // goodfellas: money examples and dark colors
 //        getMovieResult = onLoad(354912) // coco: light colors
 //        getMovieResult = onLoad(1150537) // justice league: long super long title
-        getMovieResult = onLoad(movieId) // placeholder
+        getMovieResult = onLoad(movieId)
     }
 
     if (getMovieResult == null) {
@@ -63,9 +63,16 @@ fun MovieInfo(
     val movie = getMovieResult!!
 
 
-//    val imageBasePath = "https://image.tmdb.org/t/p/original"
-    val backdropPath = "${stringResource(R.string.image_base_path)}${movie.backdropPath}"
-    val posterPath = "${stringResource(R.string.image_base_path)}${movie.posterPath}"
+    val backdropPath: String? = movie.backdropPath
+    val posterPath: String? = movie.posterPath
+    val fullBackdropPath =
+        if (backdropPath != null)
+            "${stringResource(R.string.image_base_path)}${movie.backdropPath}"
+        else ""
+    val fullPosterPath =
+        if (posterPath != null)
+            "${stringResource(R.string.image_base_path)}${movie.posterPath}"
+        else ""
 
     var backdropHeightPx by remember { mutableIntStateOf(0) }
     var titleHeightPx by remember { mutableIntStateOf(0) }
@@ -82,16 +89,16 @@ fun MovieInfo(
     )
     {
         Box {
-            AsyncImage(
-                model = backdropPath, contentDescription = "",
+            if (fullBackdropPath.isNotEmpty()) AsyncImage(
+                model = fullBackdropPath, contentDescription = "",
                 modifier = Modifier.onSizeChanged { size -> backdropHeightPx = size.height },
                 colorFilter = ColorFilter.tint(Color.LightGray, blendMode = BlendMode.Modulate),
             )
             AsyncImage(
-                model = posterPath, contentDescription = "",
+                model = fullPosterPath, contentDescription = "",
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .height(backdropHeightPx.pxToDp())
+                    .height(if (fullBackdropPath.isNotEmpty()) backdropHeightPx.pxToDp() else 256.dp)
                     .padding(16.dp)
                     .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp))
             )
@@ -101,12 +108,16 @@ fun MovieInfo(
                     .height(titleHeightPx.pxToDp())
                     .align(Alignment.BottomCenter)
                     .background(
-                        Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black))
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.background
+                            )
+                        )
                     )
             )
             Title(
                 text = movie.title,
-//                text = "${movie.title} (${movie.releaseDate.substring(0, 4)})",
                 alignRight = true,
                 modifier = Modifier
                     .onSizeChanged { size -> titleHeightPx = size.height }

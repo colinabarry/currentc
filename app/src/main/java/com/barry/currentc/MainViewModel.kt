@@ -35,11 +35,18 @@ class MainViewModel : ViewModel() {
         return@withContext api.movies.getMovie(id, "en")
     }
 
+//    suspend fun searchMovies(searchTerm: String, page: Int = 0): MovieResultsPage? =
+//        withContext(Dispatchers.IO) {
+//            val api = TmdbApi(BuildConfig.API_KEY)
+//            return@withContext api.search.searchMovie(searchTerm, 0, "en", false, page)
+//        }
+
     suspend fun searchMovies(searchTerm: String, page: Int = 0): MovieResultsPage? =
         withContext(Dispatchers.IO) {
             val api = TmdbApi(BuildConfig.API_KEY)
-            return@withContext api.search.searchMovie(searchTerm, 0, "en", true, page)
+            return@withContext api.search.searchMovie(searchTerm, 0, "en-US", false, 0)
         }
+
 
     fun login() {
         WebAuthProvider
