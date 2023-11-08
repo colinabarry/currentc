@@ -61,7 +61,13 @@ fun Search(
 //                launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
 //            }
 //        }
-        LaunchedEffect(searchTerm, currentPageIndex) {
+//        LaunchedEffect(searchTerm, currentPageIndex) {
+//            delay(150)
+//            if (searchTerm.isNotEmpty()) {
+//                launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
+//            }
+//        }
+        LaunchedEffect(searchTerm) {
             delay(150)
             if (searchTerm.isNotEmpty()) {
                 launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
@@ -84,11 +90,6 @@ fun Search(
             state = scrollState,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Log.d(
-                "DEBUG",
-                "total items: ${movieResultsPage!!.results.size}, \nscroll percent: $scrollPercent"
-            )
-//            item { Text(text = "$scrollPercent") }
             item {
                 PageControllerRow(
                     currentPageIndex = currentPageIndex,
@@ -101,7 +102,17 @@ fun Search(
                         currentPageIndex = (currentPageIndex + 1)
                             .coerceAtMost(movieResultsPage!!.totalPages)
                     })
+
+                LaunchedEffect(currentPageIndex) {
+                    if (searchTerm.isNotEmpty()) {
+                        launch {
+                            movieResultsPage = onSearch(searchTerm, currentPageIndex)
+                            Log.d("DEBUG", "trying to go to next page")
+                        }
+                    }
+                }
             }
+
 
             for (result in movieResultsPage!!.results) item(key = result.id) {
                 SearchResult(

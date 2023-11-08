@@ -1,6 +1,5 @@
 package com.barry.currentc
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -30,24 +28,23 @@ import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.Cyan
 import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.graphics.Color.Companion.Magenta
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.barry.currentc.utility.dpToPx
+import com.barry.currentc.utility.remap
 import info.movito.themoviedbapi.model.MovieDb
-import kotlin.math.pow
-import kotlin.math.roundToInt
 
 val gradientColors = listOf(Cyan, Blue, Magenta /*...*/)
 
@@ -65,8 +62,7 @@ fun Title(
             fontWeight = FontWeight.Bold,
             textAlign = if (alignRight) TextAlign.Right else TextAlign.Left,
             shadow = Shadow(Black, blurRadius = if (hasShadow) 16f else 0f),
-            color = MaterialTheme.colorScheme.onBackground,
-
+            color = White,
 //            brush = Brush.linearGradient(colors = gradientColors)
         ),
         modifier = modifier
@@ -97,12 +93,9 @@ fun SearchResult(
 ) {
     val backdropPath: String? = movie.backdropPath
     val posterPath: String? = movie.posterPath
-    //    val imagePath: String? = backdropPath ?: posterPath
-    // just use poster for now for parallax consistency
-    // TODO: fix parallax
-    val imagePath: String? = posterPath
+    val imagePath: String? = backdropPath ?: posterPath
 
-    val screenHeight = LocalConfiguration.current.screenHeightDp
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp.dpToPx()
     var imageOffset by remember { mutableFloatStateOf(0f) }
 
     Box(
@@ -113,46 +106,25 @@ fun SearchResult(
             .background(MaterialTheme.colorScheme.onSecondary)
             .clickable { onClickResult(movie.id) }
             .onGloballyPositioned { coordinates ->
-                imageOffset = coordinates.positionInWindow().y / screenHeight
-//                Log.d("DEBUG", "imageOffset: $imageOffset")
+                imageOffset = (coordinates.positionInWindow().y / screenHeight)
+                    .remap(fromMin = 0f, fromMax = 1f, toMin = -1f, toMax = 1f)
             }
-
-    )
-    {
-//        AsyncImage(
-//            model = "${stringResource(R.string.image_base_path)}$imagePath",
-//            contentDescription = "",
-//            contentScale = ContentScale.FillWidth,
-//            colorFilter = ColorFilter.tint(LightGray, blendMode = BlendMode.Modulate),
-//            modifier = Modifier
-//                .height(250.dp)
-//                .offset(y = ((imageOffset * offsetScale) - offsetScale).dp)
-//                .onGloballyPositioned { coordinates ->
-//                    imageOffset = coordinates.positionInWindow().y / screenHeight
-//                    Log.d("DEBUG", "imageOffset: $imageOffset")
-//                }
-//        )
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-//                .background(MaterialTheme.colorScheme.onSecondary)
-//                .offset(y = ((imageOffset * offsetScale) - offsetScale).dp)
         ) {
-            // AsyncImage within the background layer
-            val offsetScale = 0.75f
-
             AsyncImage(
                 model = "${stringResource(R.string.image_base_path)}$imagePath",
                 contentDescription = "",
-                contentScale = ContentScale.FillWidth,
                 colorFilter = ColorFilter.tint(LightGray, blendMode = BlendMode.Modulate),
                 alignment = BiasAlignment(
-                    verticalBias = (imageOffset * offsetScale) - offsetScale,
+                    verticalBias = imageOffset,
                     horizontalBias = 0f
                 ),
+                contentScale = ContentScale.FillWidth,
                 modifier = Modifier
-                    .requiredHeight(256.dp)
-//                    .height(256.dp),
+                    .fillMaxWidth()
             )
         }
         Text(
@@ -160,7 +132,7 @@ fun SearchResult(
             style = TextStyle(
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = White,
                 shadow = Shadow(Black, blurRadius = 18f),
             ),
             modifier = Modifier
@@ -185,10 +157,7 @@ fun PageControllerRow(
             .fillMaxWidth()
             .padding(8.dp),
     ) {
-        Button(onClick = {
-            onClickPrev()
-            Log.d("DEBUG", "prev clicked")
-        }) {
+        Button(onClick = onClickPrev) {
             Text(text = "Prev")
         }
         Text(text = "    $currentPageIndex / $totalPages    ")
@@ -196,23 +165,4 @@ fun PageControllerRow(
             Text(text = "Next")
         }
     }
-}
-
-
-// These don't belong here, but here they are
-@Composable
-fun Dp.dpToPx() = with(LocalDensity.current) { this@dpToPx.toPx() }
-
-@Composable
-fun Int.pxToDp() = with(LocalDensity.current) { this@pxToDp.toDp() }
-
-fun Float.roundToPlaces(places: Int): Float {
-    val multiplier = 10.0.pow(places.toDouble())
-    return (this * multiplier).roundToInt() / multiplier.toFloat()
-}
-
-fun minsToHours(minutes: Int): String {
-    val hours: Int = (minutes / 60)
-    val minutesRemaining: Int = minutes - (hours * 60)
-    return "${hours}h ${minutesRemaining}m"
 }

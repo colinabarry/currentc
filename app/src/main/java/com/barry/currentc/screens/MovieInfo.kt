@@ -35,8 +35,8 @@ import coil.compose.AsyncImage
 import com.barry.currentc.R
 import com.barry.currentc.SubTitle
 import com.barry.currentc.Title
-import com.barry.currentc.minsToHours
-import com.barry.currentc.pxToDp
+import com.barry.currentc.utility.minsToHours
+import com.barry.currentc.utility.pxToDp
 import info.movito.themoviedbapi.model.MovieDb
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
