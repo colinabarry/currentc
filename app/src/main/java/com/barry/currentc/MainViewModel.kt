@@ -95,3 +95,7 @@ class MainViewModel : ViewModel() {
         )
     }
 }
+
+fun test() {
+    System.out.printf("ELLO %s", "Govna")
+}

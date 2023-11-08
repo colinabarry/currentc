@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
@@ -96,11 +97,13 @@ fun SearchResult(
 ) {
     val backdropPath: String? = movie.backdropPath
     val posterPath: String? = movie.posterPath
-    val imagePath: String? = backdropPath ?: posterPath
+    //    val imagePath: String? = backdropPath ?: posterPath
+    // just use poster for now for parallax consistency
+    // TODO: fix parallax
+    val imagePath: String? = posterPath
 
     val screenHeight = LocalConfiguration.current.screenHeightDp
     var imageOffset by remember { mutableFloatStateOf(0f) }
-    val offsetScale = 25f
 
     Box(
         modifier = modifier
@@ -133,16 +136,23 @@ fun SearchResult(
             modifier = Modifier
                 .fillMaxSize()
 //                .background(MaterialTheme.colorScheme.onSecondary)
-                .offset(y = ((imageOffset * offsetScale) - offsetScale).dp)
+//                .offset(y = ((imageOffset * offsetScale) - offsetScale).dp)
         ) {
             // AsyncImage within the background layer
+            val offsetScale = 0.75f
+
             AsyncImage(
                 model = "${stringResource(R.string.image_base_path)}$imagePath",
                 contentDescription = "",
                 contentScale = ContentScale.FillWidth,
                 colorFilter = ColorFilter.tint(LightGray, blendMode = BlendMode.Modulate),
+                alignment = BiasAlignment(
+                    verticalBias = (imageOffset * offsetScale) - offsetScale,
+                    horizontalBias = 0f
+                ),
                 modifier = Modifier
-                    .height(256.dp)
+                    .requiredHeight(256.dp)
+//                    .height(256.dp),
             )
         }
         Text(

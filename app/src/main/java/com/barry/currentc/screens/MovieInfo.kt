@@ -136,15 +136,18 @@ fun MovieInfo(
             )
             Row {
                 SubTitle(
-                    text = "User Score: ${(movie.voteAverage * 10).roundToInt()}% (${movie.voteCount})",
+                    text = "User Score: " +
+                            if (movie.voteCount != 0)
+                                "${(movie.voteAverage * 10).roundToInt()}% (${movie.voteCount})"
+                            else "N/A",
                     modifier = Modifier.weight(1f),
                 )
                 SubTitle(
-                    text = "${minsToHours(movie.runtime)} | ${
-                        movie.releaseDate.substring(
+                    text = "${if (movie.runtime != 0) minsToHours(movie.runtime) else "N/A"} | ${
+                        if (movie.releaseDate.isNotEmpty()) movie.releaseDate.substring(
                             0,
                             4
-                        )
+                        ) else "N/A"
                     }"
                 )
             }

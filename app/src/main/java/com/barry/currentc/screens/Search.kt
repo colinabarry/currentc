@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.barry.currentc.PageControllerRow
 import com.barry.currentc.SearchResult
 import info.movito.themoviedbapi.model.core.MovieResultsPage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +56,13 @@ fun Search(
             modifier = Modifier.fillMaxWidth(),
         )
 
+//        LaunchedEffect(searchTerm, currentPageIndex) {
+//            if (searchTerm.isNotEmpty()) {
+//                launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
+//            }
+//        }
         LaunchedEffect(searchTerm, currentPageIndex) {
+            delay(150)
             if (searchTerm.isNotEmpty()) {
                 launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
             }
@@ -68,6 +75,8 @@ fun Search(
         val visibleItemsCount by remember { derivedStateOf { scrollState.layoutInfo.visibleItemsInfo.size } }
         val scrollPercent = firstVisibleItemIndex /
                 (movieResultsPage!!.results.size - visibleItemsCount).toFloat()
+
+
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -113,9 +122,11 @@ fun Search(
                         currentPageIndex = (currentPageIndex + 1)
                             .coerceAtMost(movieResultsPage!!.totalPages)
                     })
-            }
 
+
+            }
         }
+
 
     }
 }
