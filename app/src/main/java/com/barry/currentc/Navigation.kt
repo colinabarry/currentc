@@ -28,6 +28,7 @@ fun MainView(
     NavHost(
         navController = navController,
         startDestination = Screen.Search.name,
+//        startDestination = "${Screen.MovieInfo.name}/{movie}",
     ) {
         composable(route = Screen.Login.name) {
             Login(
@@ -52,10 +53,14 @@ fun MainView(
 
         composable(
             route = "${Screen.MovieInfo.name}/{movie}",
-            arguments = listOf(navArgument("movie") { type = NavType.IntType })
+            arguments = listOf(navArgument("movie") {
+                type = NavType.IntType;
+                defaultValue = 769
+            })
         ) { backStackEntry ->
             MovieInfo(
-                onLoad = { viewModel.getMovie(it) },
+                getMovie = { viewModel.getMovie(it) },
+                getCredits = { viewModel.getCredits(it) },
                 onBackButtonPressed = {
                     navController.popBackStack(
                         route = Screen.Search.name,

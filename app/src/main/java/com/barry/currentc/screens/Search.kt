@@ -12,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -77,12 +76,6 @@ fun Search(
         if (movieResultsPage == null || searchTerm.isEmpty()) return
 
         val scrollState = rememberLazyListState()
-        val firstVisibleItemIndex by remember { derivedStateOf { scrollState.firstVisibleItemIndex } }
-        val visibleItemsCount by remember { derivedStateOf { scrollState.layoutInfo.visibleItemsInfo.size } }
-        val scrollPercent = firstVisibleItemIndex /
-                (movieResultsPage!!.results.size - visibleItemsCount).toFloat()
-
-
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),

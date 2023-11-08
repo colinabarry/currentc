@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -28,22 +29,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.barry.currentc.PersonTile
 import com.barry.currentc.R
 import com.barry.currentc.SubTitle
 import com.barry.currentc.Title
 import com.barry.currentc.utility.minsToHours
 import com.barry.currentc.utility.pxToDp
+import info.movito.themoviedbapi.model.Credits
 import info.movito.themoviedbapi.model.MovieDb
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
 
 @Composable
 fun MovieInfo(
-    onLoad: suspend (id: Int?) -> MovieDb?,
+    getMovie: suspend (id: Int?) -> MovieDb?,
+    getCredits: suspend (id: Int?) -> Credits?,
     onBackButtonPressed: () -> Unit,
     movieId: Int?,
     modifier: Modifier = Modifier
@@ -53,7 +60,7 @@ fun MovieInfo(
 //        getMovieResult = onLoad(769) // goodfellas: money examples and dark colors
 //        getMovieResult = onLoad(354912) // coco: light colors
 //        getMovieResult = onLoad(1150537) // justice league: long super long title
-        getMovieResult = onLoad(movieId)
+        getMovieResult = getMovie(movieId)
     }
 
     if (getMovieResult == null) {
@@ -80,14 +87,14 @@ fun MovieInfo(
 
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(
                 state = ScrollState(0),
                 enabled = true
             )
-    )
-    {
+    ) {
+        // start poster, image, and title section
         Box {
             if (fullBackdropPath.isNotEmpty()) AsyncImage(
                 model = fullBackdropPath, contentDescription = "",
@@ -120,15 +127,18 @@ fun MovieInfo(
                 text = movie.title,
                 alignRight = true,
                 modifier = Modifier
-                    .onSizeChanged { size -> titleHeightPx = size.height }
+                    .onSizeChanged { titleHeightPx = it.height }
                     .align(Alignment.BottomEnd)
             )
         }
+        // end poster, image, and title section
+
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
                 .padding(horizontal = 16.dp)
         ) {
+            // start tagline, score, runtime, release year, and overview section
             if (movie.tagline != "") Text(
                 text = "\"${movie.tagline}\"",
                 fontStyle = FontStyle.Italic,
@@ -155,6 +165,37 @@ fun MovieInfo(
                 text = movie.overview,
                 textAlign = TextAlign.Justify, // doesn't work?
             )
+            // end tagline, score, runtime, release year, and overview section
+
+            // start crew section
+            var getCreditsResult: Credits?
+            runBlocking {
+                getCreditsResult = getCredits(movieId)
+            }
+
+            if (getCreditsResult == null) {
+                Text(text = "Error retrieving movie from db")
+                return
+            }
+            val credits = getCreditsResult!!
+            val cast = credits.cast
+
+            Text(
+                text = "Cast",
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                )
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (person in cast.subList(
+                    0,
+                    15.coerceAtMost(cast.size)
+                )) item { PersonTile(person = person) }
+            }
         }
     }
 }

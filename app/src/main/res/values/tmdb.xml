@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="image_base_path">https://image.tmdb.org/t/p/original</string>
+    <string name="cast_image_base_path">https://image.tmdb.org/t/p/w600_and_h900_bestv2</string>
 </resources>

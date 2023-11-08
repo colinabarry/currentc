@@ -13,6 +13,7 @@ import com.auth0.android.provider.WebAuthProvider
 import com.auth0.android.result.Credentials
 import com.barry.currentc.data.User
 import info.movito.themoviedbapi.TmdbApi
+import info.movito.themoviedbapi.model.Credits
 import info.movito.themoviedbapi.model.MovieDb
 import info.movito.themoviedbapi.model.core.MovieResultsPage
 import kotlinx.coroutines.Dispatchers
@@ -29,22 +30,28 @@ class MainViewModel : ViewModel() {
     private lateinit var context: Context
 
 
-    suspend fun getMovie(id: Int?): MovieDb? = withContext(Dispatchers.IO) {
-        if (id == null) return@withContext null
-        val api = TmdbApi(BuildConfig.API_KEY)
-        return@withContext api.movies.getMovie(id, "en")
-    }
+    suspend fun getMovie(id: Int?): MovieDb? =
+        withContext(Dispatchers.IO) {
+            if (id == null) return@withContext null
 
-//    suspend fun searchMovies(searchTerm: String, page: Int = 0): MovieResultsPage? =
-//        withContext(Dispatchers.IO) {
-//            val api = TmdbApi(BuildConfig.API_KEY)
-//            return@withContext api.search.searchMovie(searchTerm, 0, "en", false, page)
-//        }
+            val api = TmdbApi(BuildConfig.API_KEY)
+            return@withContext api.movies.getMovie(id, "en")
+        }
+
+    suspend fun getCredits(id: Int?): Credits? =
+        withContext(Dispatchers.IO) {
+            if (id == null) return@withContext null
+
+            val api = TmdbApi(BuildConfig.API_KEY)
+            return@withContext api.movies.getCredits(id)
+        }
 
     suspend fun searchMovies(searchTerm: String, page: Int = 0): MovieResultsPage? =
         withContext(Dispatchers.IO) {
+            if (searchTerm.isEmpty()) return@withContext null
+
             val api = TmdbApi(BuildConfig.API_KEY)
-            return@withContext api.search.searchMovie(searchTerm, 0, "en-US", false, 0)
+            return@withContext api.search.searchMovie(searchTerm, 0, "en-US", false, page)
         }
 
 
