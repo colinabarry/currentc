@@ -15,6 +15,7 @@ import com.barry.currentc.data.User
 import info.movito.themoviedbapi.TmdbApi
 import info.movito.themoviedbapi.model.Credits
 import info.movito.themoviedbapi.model.MovieDb
+import info.movito.themoviedbapi.model.config.TmdbConfiguration
 import info.movito.themoviedbapi.model.core.MovieResultsPage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,6 +45,12 @@ class MainViewModel : ViewModel() {
 
             val api = TmdbApi(BuildConfig.API_KEY)
             return@withContext api.movies.getCredits(id)
+        }
+
+    suspend fun getApiConfig(): TmdbConfiguration =
+        withContext(Dispatchers.IO) {
+            val api = TmdbApi(BuildConfig.API_KEY)
+            return@withContext api.configuration
         }
 
     suspend fun searchMovies(searchTerm: String, page: Int = 0): MovieResultsPage? =
