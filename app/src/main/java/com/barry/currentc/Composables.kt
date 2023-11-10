@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -141,7 +142,8 @@ fun PersonTile(
             text = person.name,
             style = TextStyle(
                 fontWeight = FontWeight.Bold,
-                shadow = Shadow(Black, blurRadius = 12f)
+                shadow = Shadow(Black, blurRadius = 12f),
+                color = White
             ),
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -170,8 +172,12 @@ fun SearchResult(
         modifier = modifier
             .height(128.dp)
             .padding(horizontal = 8.dp)
-            .clip(shape = RoundedCornerShape(32.dp))
-            .background(MaterialTheme.colorScheme.onSecondary)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(32.dp),
+                clip = true,
+            )
+//            .background(MaterialTheme.colorScheme.onSecondary)
             .clickable { onClickResult(movie.id) }
             .onGloballyPositioned { coordinates ->
                 imageOffset = (coordinates.positionInWindow().y / screenHeight)
@@ -200,11 +206,10 @@ fun SearchResult(
             text = buildAnnotatedString {
                 withStyle(
                     SpanStyle(
-                        brush = null,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         shadow = Shadow(Black, blurRadius = 16f),
-                        alpha = 1f
+                        color = White,
                     )
                 ) {
                     append(movie.title)
@@ -214,8 +219,6 @@ fun SearchResult(
                         SpanStyle(
                             brush = brush,
                             fontSize = 16.sp,
-//                            fontWeight = FontWeight.Bold,
-//                            shadow = Shadow(Black, blurRadius = 12f),
                             alpha = 0.5f
                         )
                     ) {
@@ -224,7 +227,7 @@ fun SearchResult(
             },
             modifier = Modifier
                 .padding(start = 16.dp)
-                .align(Alignment.CenterStart),
+                .align(Alignment.CenterStart)
         )
     }
 }
