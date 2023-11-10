@@ -2,9 +2,20 @@ package com.barry.currentc.utility
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import com.barry.currentc.R
+import com.barry.currentc.data.TmdbConfig
+import com.google.gson.Gson
 import kotlin.math.pow
 import kotlin.math.roundToInt
+
+val gson = Gson()
+
+@Composable
+fun getConfiguration(): TmdbConfig {
+    return gson.fromJson(stringResource(R.string.configuration), TmdbConfig::class.java)
+}
 
 
 fun Float.remap(fromMin: Float, fromMax: Float, toMin: Float, toMax: Float): Float {

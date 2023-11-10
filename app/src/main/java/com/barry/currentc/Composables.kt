@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -171,13 +172,12 @@ fun SearchResult(
     Box(
         modifier = modifier
             .height(128.dp)
-            .padding(horizontal = 8.dp)
             .shadow(
                 elevation = 4.dp,
                 shape = RoundedCornerShape(32.dp),
                 clip = true,
             )
-//            .background(MaterialTheme.colorScheme.onSecondary)
+            .background(MaterialTheme.colorScheme.onSecondary)
             .clickable { onClickResult(movie.id) }
             .onGloballyPositioned { coordinates ->
                 imageOffset = (coordinates.positionInWindow().y / screenHeight)
@@ -240,19 +240,27 @@ fun PageControllerRow(
     onClickNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
+    Box(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
     ) {
-        Button(onClick = onClickPrev) {
-            Text(text = "Prev")
-        }
-        Text(text = "    $currentPageIndex / $totalPages    ")
-        Button(onClick = onClickNext) {
-            Text(text = "Next")
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+                .align(Alignment.BottomCenter)
+                .wrapContentWidth()
+                .shadow(4.dp, shape = RoundedCornerShape(32.dp), clip = true)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Button(onClick = onClickPrev) {
+                Text(text = "Prev")
+            }
+            Text(text = "    $currentPageIndex / $totalPages    ")
+            Button(onClick = onClickNext) {
+                Text(text = "Next")
+            }
         }
     }
 }

@@ -1,13 +1,16 @@
 package com.barry.currentc.screens
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -20,7 +23,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.barry.currentc.PageControllerRow
 import com.barry.currentc.SearchResult
 import info.movito.themoviedbapi.model.core.MovieResultsPage
@@ -43,78 +53,77 @@ fun Search(
 
     Column(
         modifier = modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .padding(12.dp),
     ) {
-        TextField(
-            value = searchTerm,
-            onValueChange = {
-                searchTerm = it
-            },
-            label = { Text(text = "Search") },
-//            maxLines = 1,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-//        LaunchedEffect(searchTerm, currentPageIndex) {
-//            if (searchTerm.isNotEmpty()) {
-//                launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
-//            }
-//        }
-//        LaunchedEffect(searchTerm, currentPageIndex) {
-//            delay(150)
-//            if (searchTerm.isNotEmpty()) {
-//                launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
-//            }
-//        }
-        LaunchedEffect(searchTerm) {
+        LaunchedEffect(searchTerm, currentPageIndex) {
             delay(150)
             if (searchTerm.isNotEmpty()) {
                 launch { movieResultsPage = onSearch(searchTerm, currentPageIndex) }
             }
         }
 
-        if (movieResultsPage == null || searchTerm.isEmpty()) return
-
-        val scrollState = rememberLazyListState()
-
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            state = scrollState,
-            modifier = Modifier.fillMaxWidth()
+        Box(
+            modifier = Modifier
+                .weight(1f)
         ) {
-            item {
-                PageControllerRow(
-                    currentPageIndex = currentPageIndex,
-                    totalPages = movieResultsPage!!.totalPages,
-                    onClickPrev = {
-                        currentPageIndex = (currentPageIndex - 1)
-                            .coerceAtLeast(1)
-                    },
-                    onClickNext = {
-                        currentPageIndex = (currentPageIndex + 1)
-                            .coerceAtMost(movieResultsPage!!.totalPages)
-                    })
+            if (movieResultsPage != null && searchTerm.isNotEmpty()) {
+                val scrollState = rememberLazyListState()
 
-                LaunchedEffect(currentPageIndex) {
-                    if (searchTerm.isNotEmpty()) {
-                        launch {
-                            movieResultsPage = onSearch(searchTerm, currentPageIndex)
-                            Log.d("DEBUG", "trying to go to next page")
-                        }
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    state = scrollState,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                ) {
+                    for (result in movieResultsPage!!.results) item(key = result.id) {
+                        SearchResult(
+                            movie = result,
+                            onClickResult = onClickResult,
+                        )
+                    }
+                    item {
+                        Box(Modifier.height(128.dp))
                     }
                 }
-            }
-
-
-            for (result in movieResultsPage!!.results) item(key = result.id) {
-                SearchResult(
-                    movie = result,
-                    onClickResult = onClickResult,
+            } else {
+                Text(
+                    text = "Search for movies",
+                    Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 28.sp,
+                        brush = Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.onBackground
+                            )
+                        ),
+                        shadow = Shadow(color = Color(1f, 1f, 1f, 0.65f), blurRadius = 32f)
+                    )
                 )
             }
 
-            item {
+        }
+        Column(
+            verticalArrangement = Arrangement.spacedBy((-128).dp),
+            modifier = Modifier
+        ) {
+            TextField(
+                value = searchTerm,
+                onValueChange = {
+                    searchTerm = it
+                },
+                label = { Text(text = "Search") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
+
+            if (movieResultsPage != null && searchTerm.isNotEmpty()) {
                 PageControllerRow(
                     currentPageIndex = currentPageIndex,
                     totalPages = movieResultsPage!!.totalPages,
@@ -125,10 +134,10 @@ fun Search(
                     onClickNext = {
                         currentPageIndex = (currentPageIndex + 1)
                             .coerceAtMost(movieResultsPage!!.totalPages)
-                    })
-
-
+                    },
+                )
             }
+
         }
 
 

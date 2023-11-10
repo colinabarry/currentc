@@ -15,6 +15,7 @@ import com.barry.currentc.data.User
 import info.movito.themoviedbapi.TmdbApi
 import info.movito.themoviedbapi.model.Credits
 import info.movito.themoviedbapi.model.MovieDb
+import info.movito.themoviedbapi.model.ReleaseInfo
 import info.movito.themoviedbapi.model.config.TmdbConfiguration
 import info.movito.themoviedbapi.model.core.MovieResultsPage
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,14 @@ class MainViewModel : ViewModel() {
 
             val api = TmdbApi(BuildConfig.API_KEY)
             return@withContext api.movies.getCredits(id)
+        }
+
+    suspend fun getReleaseInfo(id: Int?): List<ReleaseInfo>? =
+        withContext(Dispatchers.IO) {
+            if (id == null) return@withContext null
+
+            val api = TmdbApi(BuildConfig.API_KEY)
+            return@withContext api.movies.getReleaseInfo(id, "en-US")
         }
 
     suspend fun getApiConfig(): TmdbConfiguration =

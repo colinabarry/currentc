@@ -44,23 +44,27 @@ import com.barry.currentc.utility.minsToHours
 import com.barry.currentc.utility.pxToDp
 import info.movito.themoviedbapi.model.Credits
 import info.movito.themoviedbapi.model.MovieDb
+import info.movito.themoviedbapi.model.ReleaseInfo
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
 
 @Composable
 fun MovieInfo(
     getMovie: suspend (id: Int?) -> MovieDb?,
+    getReleaseInfo: suspend (id: Int?) -> List<ReleaseInfo>?,
     getCredits: suspend (id: Int?) -> Credits?,
     onBackButtonPressed: () -> Unit,
     movieId: Int?,
     modifier: Modifier = Modifier
 ) {
     var getMovieResult: MovieDb?
+    var getReleaseInfoResult: List<ReleaseInfo>?
     runBlocking {
 //        getMovieResult = onLoad(769) // goodfellas: money examples and dark colors
 //        getMovieResult = onLoad(354912) // coco: light colors
 //        getMovieResult = onLoad(1150537) // justice league: long super long title
         getMovieResult = getMovie(movieId)
+        getReleaseInfoResult = getReleaseInfo(movieId)
     }
 
     if (getMovieResult == null) {
@@ -69,6 +73,9 @@ fun MovieInfo(
     }
     val movie = getMovieResult!!
 
+//    var releaseInfo: ReleaseInfo? = null
+//    if (getReleaseInfoResult != null)
+//        releaseInfo = getReleaseInfoResult!![30]
 
     val backdropPath: String? = movie.backdropPath
     val posterPath: String? = movie.posterPath
@@ -153,12 +160,14 @@ fun MovieInfo(
                     modifier = Modifier.weight(1f),
                 )
                 SubTitle(
-                    text = "${if (movie.runtime != 0) minsToHours(movie.runtime) else "N/A"} | ${
-                        if (movie.releaseDate.isNotEmpty()) movie.releaseDate.substring(
-                            0,
-                            4
-                        ) else "N/A"
-                    }"
+                    text = "${if (movie.runtime != 0) minsToHours(movie.runtime) else "N/A"} | " +
+                            "${
+                                if (movie.releaseDate.isNotEmpty()) movie.releaseDate.substring(
+                                    0,
+                                    4
+                                ) else "N/A"
+                            }"
+//                            + " | ${releaseInfo?.releaseDates!![0].certification ?: "nothin"}"
                 )
             }
             Text(

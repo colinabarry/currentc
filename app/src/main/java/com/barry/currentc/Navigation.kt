@@ -60,6 +60,7 @@ fun MainView(
         ) { backStackEntry ->
             MovieInfo(
                 getMovie = { viewModel.getMovie(it) },
+                getReleaseInfo = { viewModel.getReleaseInfo(it) },
                 getCredits = { viewModel.getCredits(it) },
                 onBackButtonPressed = {
                     navController.popBackStack(
