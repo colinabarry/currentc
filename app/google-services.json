@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "359337338491",
+    "project_id": "currentc-42acd",
+    "storage_bucket": "currentc-42acd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:359337338491:android:9e4415f237bd1c4d2724de",
+        "android_client_info": {
+          "package_name": "com.barry.currentc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQGY7qgWe3jVTbZXw2pIF-ieRY4BoKAss"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -31,8 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.barry.currentc.PageControllerRow
-import com.barry.currentc.SearchResult
+import com.barry.currentc.common.composable.PageControllerRow
+import com.barry.currentc.common.composable.SearchResult
 import info.movito.themoviedbapi.model.core.MovieResultsPage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,7 +54,7 @@ fun Search(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(12.dp),
+            .padding(12.dp)
     ) {
         LaunchedEffect(searchTerm, currentPageIndex) {
             delay(150)
@@ -63,10 +63,7 @@ fun Search(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-        ) {
+        Box(modifier = Modifier.weight(1f)) {
             if (movieResultsPage != null && searchTerm.isNotEmpty()) {
                 val scrollState = rememberLazyListState()
 
@@ -108,6 +105,7 @@ fun Search(
             }
 
         }
+
         Column(
             verticalArrangement = Arrangement.spacedBy((-128).dp),
             modifier = Modifier

@@ -1,16 +1,22 @@
-package com.barry.currentc
+package com.barry.currentc.common.composable
 
+import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -30,10 +36,8 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
-import androidx.compose.ui.graphics.Color.Companion.Blue
-import androidx.compose.ui.graphics.Color.Companion.Cyan
+import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.graphics.Color.Companion.LightGray
-import androidx.compose.ui.graphics.Color.Companion.Magenta
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shadow
@@ -42,6 +46,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -52,13 +57,15 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.barry.currentc.utility.dpToPx
-import com.barry.currentc.utility.pxToDp
-import com.barry.currentc.utility.remap
+import com.barry.currentc.R
+import com.barry.currentc.common.ext.dpToPx
+import com.barry.currentc.common.ext.pxToDp
+import com.barry.currentc.common.ext.remap
 import info.movito.themoviedbapi.model.MovieDb
-import info.movito.themoviedbapi.model.people.Person
+import info.movito.themoviedbapi.model.core.MovieResultsPage
+import info.movito.themoviedbapi.model.people.PersonCast
 
-val gradientColors = listOf(Cyan, Blue, Magenta /*...*/)
+//val gradientColors = listOf(Cyan, Blue, Magenta /*...*/)
 
 @Composable
 fun Title(
@@ -99,7 +106,7 @@ fun SubTitle(
 
 @Composable
 fun PersonTile(
-    person: Person,
+    person: PersonCast,
 //    onClickPerson: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -107,50 +114,140 @@ fun PersonTile(
 
     var nameHeightPx by remember { mutableIntStateOf(0) }
 
-    Box(
-        modifier = modifier
-            .size(90.dp, 150.dp)
-            .clip(shape = RoundedCornerShape(8.dp))
-//            .clickable { onClickPerson(person.id) }
+    Column(
+        modifier = Modifier
+            .width(130.dp)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(shape = RoundedCornerShape(8.dp))
+                .clickable { }
         ) {
-            AsyncImage(
-                model = fullImagePath,
-                contentDescription = "",
-                contentScale = ContentScale.FillHeight,
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                AsyncImage(
+                    model = fullImagePath,
+                    contentDescription = "",
+                    contentScale = ContentScale.FillHeight,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                )
+            }
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(nameHeightPx.pxToDp())
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background,
+                    .height(nameHeightPx.pxToDp())
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.background,
+                            )
                         )
                     )
-                )
-        )
+            )
+            Text(
+                text = "${person.name}",
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    shadow = Shadow(Black, blurRadius = 12f),
+                    color = White
+                ),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .onSizeChanged { nameHeightPx = it.height }
+            )
+        }
         Text(
-            text = person.name,
+            text = "${person.character}",
             style = TextStyle(
-                fontWeight = FontWeight.Bold,
-                shadow = Shadow(Black, blurRadius = 12f),
-                color = White
+                fontSize = 12.sp,
+//                fontWeight = FontWeight.Bold,
+//                shadow = Shadow(Black, blurRadius = 12f),
+                color = Gray,
             ),
             modifier = Modifier
-                .align(Alignment.BottomStart)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
                 .onSizeChanged { nameHeightPx = it.height }
         )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MovieTile(
+    movie: MovieDb,
+    onClickResult: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backdropPath: String? = movie.backdropPath
+    val posterPath: String? = movie.posterPath
+    val imagePath: String? = posterPath ?: backdropPath
+    val fullImagePath = "${stringResource(R.string.image_base_path)}$imagePath"
+    val context = LocalContext.current
+
+
+    Box(
+        Modifier
+            .height(256.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(32.dp),
+                clip = true,
+            )
+            .background(MaterialTheme.colorScheme.onSecondary)
+            .combinedClickable(
+                onClick = { onClickResult(movie.id) },
+                onLongClick = {
+                    Toast
+                        .makeText(context, movie.title, Toast.LENGTH_SHORT)
+                        .show()
+                }
+            )
+    ) {
+        AsyncImage(
+            model = fullImagePath, contentDescription = "",
+            modifier = Modifier
+//                .align(Alignment.CenterStart)
+//                .height(256.dp)
+//                .padding(16.dp)
+//                .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp))
+        )
+    }
+}
+
+@Composable
+fun MovieCarousel(
+    title: String,
+    movieResultsPage: MovieResultsPage,
+    onClickMovie: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = title,
+        style = TextStyle(
+            fontSize = 20.sp,
+            color = MaterialTheme.colorScheme.secondary,
+            fontWeight = FontWeight.Bold
+        )
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.clip(RoundedCornerShape(32.dp))
+    ) {
+        for (result in movieResultsPage.results) {
+            item(key = result.id) {
+                MovieTile(movie = result, onClickResult = onClickMovie)
+            }
+        }
     }
 }
 
