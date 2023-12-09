@@ -35,7 +35,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.barry.currentc.common.ext.dropdownSelector
 
 @Composable
 fun DangerousCardEditor(
@@ -45,7 +44,15 @@ fun DangerousCardEditor(
     modifier: Modifier,
     onEditClick: () -> Unit
 ) {
-    CardEditor(title, icon, content, onEditClick, MaterialTheme.colorScheme.primary, modifier)
+    CardEditor(
+        title,
+        icon,
+        content,
+        onEditClick,
+        MaterialTheme.colorScheme.onPrimary,
+        MaterialTheme.colorScheme.primary,
+        modifier
+    )
 }
 
 @Composable
@@ -56,7 +63,15 @@ fun RegularCardEditor(
     modifier: Modifier,
     onEditClick: () -> Unit
 ) {
-    CardEditor(title, icon, content, onEditClick, MaterialTheme.colorScheme.onSurface, modifier)
+    CardEditor(
+        title = title,
+        icon = icon,
+        content = content,
+        onEditClick = onEditClick,
+        cardColor = MaterialTheme.colorScheme.onSecondary,
+        textColor = MaterialTheme.colorScheme.onBackground,
+        modifier = modifier
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,11 +81,12 @@ private fun CardEditor(
     @DrawableRes icon: Int,
     content: String,
     onEditClick: () -> Unit,
-    highlightColor: Color,
+    cardColor: Color,
+    textColor: Color,
     modifier: Modifier
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         modifier = modifier,
         onClick = onEditClick
     ) {
@@ -83,7 +99,7 @@ private fun CardEditor(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     stringResource(title),
-                    color = highlightColor
+                    color = textColor
                 )
             }
 
@@ -94,24 +110,8 @@ private fun CardEditor(
             Icon(
                 painter = painterResource(icon),
                 contentDescription = "Icon",
-                tint = highlightColor
+                tint = textColor
             )
         }
-    }
-}
-
-@Composable
-fun CardSelector(
-    @StringRes label: Int,
-    options: List<String>,
-    selection: String,
-    modifier: Modifier,
-    onNewValue: (String) -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary),
-        modifier = modifier
-    ) {
-        DropdownSelector(label, options, selection, Modifier.dropdownSelector(), onNewValue)
     }
 }

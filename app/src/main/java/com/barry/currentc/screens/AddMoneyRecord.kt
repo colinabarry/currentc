@@ -41,7 +41,6 @@ fun AddMoneyRecord(
     var record by remember { mutableStateOf<MoneyRecord?>(null) }
 
     val intOnlyPattern = remember { Regex("^\\d{0,4}\$") }
-//    val floatOnlyPattern = remember { Regex("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$") }
     val floatOnlyPattern = remember { Regex("^\\d+(\\.\\d{0,2})?$") }
     val timestampPattern = remember {
         Regex("^(?:(?:([01]?\\d|2[0-3]):)?([0-5]?\\d)?:)?([0-5]?\\d)?$")

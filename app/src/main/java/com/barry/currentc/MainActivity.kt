@@ -3,7 +3,6 @@ package com.barry.currentc
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,9 +27,8 @@ class MainActivity : ComponentActivity(), CoroutineScope {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data: Intent? = result.data
-                Log.d("pickImageLauncher", "data.data: ${data?.data}")
-                mainViewModel.handleImageUploadResult(data)
-                Log.d("pickImageLauncher", "called hangleImageUploadResult")
+//                mainViewModel.handleImageUploadResult(data)
+                mainViewModel.setPickImageData(data)
             }
         }
 
@@ -47,7 +45,9 @@ class MainActivity : ComponentActivity(), CoroutineScope {
         mainViewModel.pickImageLauncher = pickImageLauncher
         job = Job()
 
-        launch { mainViewModel.createAnonymousAccount() }
+        launch {
+            mainViewModel.createAnonymousAccount()
+        }
 
         super.onCreate(savedInstanceState)
 

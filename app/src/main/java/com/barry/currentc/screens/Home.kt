@@ -1,11 +1,13 @@
 package com.barry.currentc.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,10 +20,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.barry.currentc.common.composable.ActionToolbar
 import com.barry.currentc.common.composable.MovieCarousel
-import com.barry.currentc.common.composable.Title
+import com.barry.currentc.common.ext.toolbarActions
 import info.movito.themoviedbapi.model.core.MovieResultsPage
 import kotlinx.coroutines.runBlocking
+import com.barry.currentc.R.drawable as AppIcon
+import com.barry.currentc.R.string as AppText
 
 @Composable
 fun Home(
@@ -30,66 +35,78 @@ fun Home(
     getNowPlayingMovies: suspend () -> MovieResultsPage?,
     onClickMovie: (Int) -> Unit,
     onClickSearch: () -> Unit,
+    onClickSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val popularMovies = remember { runBlocking { getPopularMovies() } }
     val topRatedMovies = remember { runBlocking { getTopRatedMovies() } }
     val nowPlayingMovies = remember { runBlocking { getNowPlayingMovies() } }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
-        LazyColumn(
+        ActionToolbar(
+            title = AppText.app_name,
+            endActionIcon = AppIcon.ic_settings,
+            modifier = Modifier.toolbarActions()
+        ) {
+            onClickSettings()
+        }
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(horizontal = 16.dp)
         ) {
-            item { Title(text = "Home") }
-            if (popularMovies != null) item {
-                MovieCarousel(
-                    title = "Popular today",
-                    movieResultsPage = popularMovies,
-                    onClickMovie = onClickMovie
-                )
-            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (popularMovies != null) {
+                    MovieCarousel(
+                        title = "Popular today",
+                        movieResultsPage = popularMovies,
+                        onClickMovie = onClickMovie
+                    )
+                }
 
-            if (topRatedMovies != null) item {
-                MovieCarousel(
-                    title = "Top rated",
-                    movieResultsPage = topRatedMovies,
-                    onClickMovie = onClickMovie
-                )
-            }
+                if (topRatedMovies != null) {
+                    MovieCarousel(
+                        title = "Top rated",
+                        movieResultsPage = topRatedMovies,
+                        onClickMovie = onClickMovie
+                    )
+                }
 
-            if (nowPlayingMovies != null) item {
-                MovieCarousel(
-                    title = "Now playing",
-                    movieResultsPage = nowPlayingMovies,
-                    onClickMovie = onClickMovie
-                )
-            }
+                if (nowPlayingMovies != null) {
+                    MovieCarousel(
+                        title = "Now playing",
+                        movieResultsPage = nowPlayingMovies,
+                        onClickMovie = onClickMovie
+                    )
+                }
 
-            item {
                 Spacer(Modifier.height(64.dp))
             }
-        }
 
-        Button(
-            onClick = { onClickSearch() },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .shadow(16.dp)
-        ) {
-            Text(
-                text = "Search",
-                style = TextStyle(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
+            Button(
+                onClick = { onClickSearch() },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .shadow(16.dp)
+                    .padding(bottom = 8.dp)
+            ) {
+                Text(
+                    text = "Search",
+                    style = TextStyle(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
-            )
 
+            }
         }
     }
 }

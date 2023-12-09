@@ -6,17 +6,24 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.barry.currentc.common.ext.isValidEmail
+import com.barry.currentc.common.ext.isValidPassword
+import com.barry.currentc.common.ext.passwordMatches
 import com.barry.currentc.common.utility.createBitmapFromUri
 import com.barry.currentc.common.utility.normalizeBitmap
 import com.barry.currentc.common.utility.saveBitmapToFile
+import com.barry.currentc.model.AnnotatedImage
 import com.barry.currentc.model.MoneyRecord
 import com.barry.currentc.model.User
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.toObject
 import com.google.firebase.storage.FirebaseStorage
 import info.movito.themoviedbapi.TmdbApi
 import info.movito.themoviedbapi.model.Credits
@@ -24,12 +31,13 @@ import info.movito.themoviedbapi.model.MovieDb
 import info.movito.themoviedbapi.model.ReleaseInfo
 import info.movito.themoviedbapi.model.config.TmdbConfiguration
 import info.movito.themoviedbapi.model.core.MovieResultsPage
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -39,10 +47,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
+import com.barry.currentc.R.string as AppText
 
 
 class MainViewModel : ViewModel() {
-    var currentMovieId: Int? = 769
+    var currentMovieId: Int? = null
 
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
@@ -50,8 +59,7 @@ class MainViewModel : ViewModel() {
 
     lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private lateinit var context: Context
-
-    private val httpClient = HttpClient(OkHttp)
+    private var pickImageData: Intent? = null
 
 
     suspend fun getPriceChangeToToday(record: MoneyRecord): String =
@@ -63,7 +71,7 @@ class MainViewModel : ViewModel() {
                 "united-states",
                 "${record.year}/1/1",
                 date,
-                record.amount.toFloat()
+                record.amount
             )
         }
 
@@ -71,9 +79,10 @@ class MainViewModel : ViewModel() {
         country: String,
         start: String,
         end: String,
-        amount: Float
+        amount: String
     ): String = withContext(Dispatchers.IO) {
         val BASE_URL = "https://www.statbureau.org/calculate-inflation-price-json"
+//        Log.d("getPriceChange", "amount: $amount")
         val url = URL("$BASE_URL?country=$country&start=$start&end=$end&amount=$amount")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
@@ -90,24 +99,27 @@ class MainViewModel : ViewModel() {
                 bufferedReader.forEachLine {
                     response.append(it.trim())
                 }
-                Log.d("getPriceChange", "success: $response")
+//                Log.d("getPriceChange", "success: $response")
             }
         } catch (e: Exception) {
-            Log.d("getPriceChange", "error :${e.message}")
+            Log.e("getPriceChange", "error :${e.message}")
 
         }
-        return@withContext response.toString().replace('"', ' ').trim()
+        return@withContext response
+            .toString()
+            .replace("\"", "")
+            .replace(" ", "")
+            .replace("$", "")
     }
 
-    suspend fun getImages(movieId: Int?): List<String> {
+    suspend fun getImagesAndAnnotations(movieId: Int?): Map<String, String> {
         if (movieId == null) {
-            return emptyList()
+            return emptyMap()
         }
 
-        val storageRef = storage.reference.child("movies/$movieId")
-
-        return try {
-            val result = storageRef.listAll().await()
+        val imagesRef = storage.reference.child("movies/$movieId")
+        val images = try {
+            val result = imagesRef.listAll().await()
             result.items.map { fileRef ->
                 fileRef.path
             }
@@ -115,6 +127,35 @@ class MainViewModel : ViewModel() {
             Log.e("Storage", "Error listing images", e)
             emptyList()
         }
+//        Log.d("getImagesAndAnnotations", images.toString())
+
+        val annotationDoc = firestore
+            .collection("movies")
+            .document(currentMovieId.toString())
+            .collection("annotations")
+        val annotations: MutableList<AnnotatedImage> = mutableListOf()
+        try {
+            val documents = annotationDoc.get().await()
+
+            for (doc in documents) {
+                annotations.add(doc.toObject<AnnotatedImage>())
+            }
+        } catch (e: Exception) {
+            Log.e("Firestore", "Error listing annotations", e)
+            emptyMap<String, String>()
+        }
+//        Log.d("getImagesAndAnnotations", annotations.toString())
+
+        val truncatedFilenames = images.map { it.substringAfterLast("/").substringBeforeLast(".") }
+
+        val resultMap = (truncatedFilenames + annotations.map { it.name })
+            .distinct()
+            .associateWith { filename ->
+                annotations.find { it.name == filename }?.annotation.orEmpty()
+            }
+        Log.d("getImagesAndAnnotations", resultMap.toString())
+
+        return resultMap
     }
 
     fun pickImage() {
@@ -125,49 +166,53 @@ class MainViewModel : ViewModel() {
         pickImageLauncher.launch(intent)
     }
 
-    fun handleImageUploadResult(data: Intent?) {
-        if (data == null) {
-            // No image selected
-            return
+    fun setPickImageData(data: Intent?) {
+        pickImageData = data
+    }
+
+    fun getPickImageData() = pickImageData
+
+    fun handleImageUploadResult(
+//        data: Intent?,
+        annotation: String?
+    ) {
+        val data = getPickImageData()
+        val time = System.currentTimeMillis()
+
+        if (annotation != null) {
+            val annotationDoc = firestore
+                .collection("movies")
+                .document(currentMovieId.toString())
+                .collection("annotations")
+                .document(time.toString())
+
+            annotationDoc.set(AnnotatedImage(time.toString(), annotation), SetOptions.merge())
         }
 
-        val time = System.currentTimeMillis()
-        val fileName = "$time.jpg"
+        if (data != null) {
+            val fileName = "$time.jpg"
+            val imageUri: Uri = data.data!!
+            val bitmap = createBitmapFromUri(imageUri, context)
+            val largestDimension = if (bitmap.width > bitmap.height) bitmap.width else bitmap.height
 
-        val imageUri: Uri = data.data!!
-        val bitmap = createBitmapFromUri(imageUri, context)
-        val largestDimension = if (bitmap.width > bitmap.height) bitmap.width else bitmap.height
+            val outputBitmap =
+                if (largestDimension >= 100)
+                    normalizeBitmap(bitmap, 100)
+                else bitmap
 
-        val outputBitmap =
-            if (largestDimension >= 1000)
-                normalizeBitmap(bitmap, 1000)
-            else bitmap
+            val outputFile = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                fileName
+            )
+            saveBitmapToFile(outputBitmap, outputFile)
 
-        val outputFile = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-            fileName
-        )
-        saveBitmapToFile(outputBitmap, outputFile)
+            val storageRef = storage.reference
+            val imageRef = storageRef.child("movies/$currentMovieId/$fileName")
 
-        // Get a reference to the Firebase Storage
-        val storageRef = storage.reference
-        // Create a reference to the image location in Firebase Storage
-        val imageRef = storageRef.child("movies/$currentMovieId/$fileName")
+            imageRef.putFile(Uri.fromFile(outputFile))
+        }
 
-        // Upload the image to Firebase Storage
-        imageRef.putFile(Uri.fromFile(outputFile))
-            .addOnProgressListener {// TODO: Implement this
-                var totalBytes = it.totalByteCount
-                var bytesTransferred = it.bytesTransferred
-            }
-            .addOnSuccessListener {
-                // Image uploaded successfully
-                // Handle success, e.g., show a success message or update UI
-            }
-            .addOnFailureListener {
-                // Handle failure
-                // Log error or show an error message to the user
-            }
+        setPickImageData(null)
     }
 
     suspend fun getMoneyRecords(movieId: Int?): List<MoneyRecord> =
@@ -185,7 +230,7 @@ class MainViewModel : ViewModel() {
                     .get().await()
 
                 for (doc in documents) {
-                    result.add(doc.toObject(MoneyRecord::class.java))
+                    result.add(doc.toObject<MoneyRecord>())
                 }
             } catch (e: Exception) {
                 Log.e("getMoneyRecords", e.localizedMessage)
@@ -214,36 +259,6 @@ class MainViewModel : ViewModel() {
 
             return@withContext success
         }
-//suspend fun addMoneyRecord(movieId: Int?, amount: Float): Boolean =
-//        withContext(Dispatchers.IO) {
-//            if (movieId == null) return@withContext false
-//
-//            try {
-//                val movieRef = firestore.collection("movies").document(movieId.toString())
-//
-//                // Check if document exists
-//                val movieDocSnapshot = movieRef.get().await()
-//                // Create document if necessary
-//                if (!movieDocSnapshot.exists()) {
-//                    movieRef.set(mapOf("moneyRecords" to mutableListOf<Float>())).await()
-//                }
-//
-//                // Retrieve the updated document snapshot
-//                val updatedSnapshot = movieRef.get().await()
-//
-//                // Update the moneyRecords field
-//                val moneyRecords = updatedSnapshot
-//                    .data
-//                    ?.get("moneyRecords") as? MutableList<Float> ?: mutableListOf()
-//                moneyRecords.add(amount)
-//                movieRef.update("moneyRecords", moneyRecords).await()
-//            } catch (e: Exception) {
-//                Log.e("Firestore", "Error adding money record", e)
-//                return@withContext false
-//            }
-//            return@withContext true
-//        }
-
 
     suspend fun getMovie(id: Int?): MovieDb? =
         withContext(Dispatchers.IO) {
@@ -302,11 +317,16 @@ class MainViewModel : ViewModel() {
             return@withContext api.movies.getNowPlayingMovies("en-US", 0, "US")
         }
 
-    val currentUserId: String
-        get() = auth.currentUser?.uid.orEmpty()
+    fun isAnonymousAccount(): Boolean = auth.currentUser?.isAnonymous ?: true
 
-    val hasUser: Boolean
-        get() = auth.currentUser != null
+
+    fun getCurrentUserId(): String = auth.currentUser?.uid.orEmpty()
+
+    fun getCurrentUserEmail(): String = auth.currentUser?.email.orEmpty()
+
+    fun hasUser(): Boolean {
+        return auth.currentUser != null
+    }
 
     val currentUser: Flow<User>
         get() = callbackFlow {
@@ -349,6 +369,117 @@ class MainViewModel : ViewModel() {
         createAnonymousAccount()
     }
 
+    private var email = ""
+    private var password = ""
+    private var repeatPassword = ""
+
+    fun getEmail(): String {
+        return email
+    }
+
+    fun setEmail(newEmail: String) {
+        email = newEmail
+    }
+
+    fun getPassword(): String {
+        return password
+    }
+
+    fun setPassword(newPassword: String) {
+        password = newPassword
+    }
+
+    fun getRepeatPassword(): String {
+        return repeatPassword
+    }
+
+    fun setRepeatPassword(newPassword: String) {
+        repeatPassword = newPassword
+    }
+
+
+    suspend fun onSignInClick(
+        openAndPopUp: (String, String) -> Unit,
+//        settingsScreen: String,
+//        loginScreen: String
+    ) {
+        if (!email.isValidEmail()) {
+            Toast
+                .makeText(context, AppText.email_error, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        if (password.isBlank()) {
+            Toast
+                .makeText(context, AppText.empty_password_error, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        launchCatching {
+            Log.d("onSignInClick", "pre: " + auth.currentUser?.uid)
+            authenticate(email, password)
+            Log.d("onSignInClick", "post: " + auth.currentUser?.uid)
+            openAndPopUp("Settings", "Login")
+        }
+    }
+
+    fun onForgotPasswordClick() {
+        if (!email.isValidEmail()) {
+            Toast
+                .makeText(context, AppText.email_error, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        launchCatching {
+            sendRecoveryEmail(email)
+            Toast
+                .makeText(context, AppText.recovery_email_sent, Toast.LENGTH_SHORT)
+                .show()
+        }
+    }
+
+    fun onSignUpClick(openAndPopUp: (String, String) -> Unit) {
+        if (!email.isValidEmail()) {
+            Toast
+                .makeText(context, AppText.email_error, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        if (!password.isValidPassword()) {
+            Toast
+                .makeText(context, AppText.password_error, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        if (!password.passwordMatches(repeatPassword)) {
+            Toast
+                .makeText(context, AppText.password_match_error, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        launchCatching {
+            linkAccount(email, password)
+            openAndPopUp("Settings", "SignUp")
+        }
+    }
+
+    fun launchCatching(snackbar: Boolean = true, block: suspend CoroutineScope.() -> Unit) =
+        viewModelScope.launch(
+            CoroutineExceptionHandler { _, throwable ->
+                Toast
+                    .makeText(context, throwable.localizedMessage, Toast.LENGTH_SHORT)
+                    .show()
+                Log.e("launchCatching", throwable.localizedMessage)
+            },
+            block = block
+        )
+
     fun setContext(activityContext: Context) {
         context = activityContext
 //        account = Auth0(
@@ -357,3 +488,4 @@ class MainViewModel : ViewModel() {
 //        )
     }
 }
+

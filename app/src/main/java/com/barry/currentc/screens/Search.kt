@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -65,23 +65,23 @@ fun Search(
 
         Box(modifier = Modifier.weight(1f)) {
             if (movieResultsPage != null && searchTerm.isNotEmpty()) {
-                val scrollState = rememberLazyListState()
+//                val scrollState = rememberLazyListState()
 
-                LazyColumn(
+                Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    state = scrollState,
+//                    state = scrollState,
                     modifier = Modifier
                         .padding(top = 4.dp)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    for (result in movieResultsPage!!.results) item(key = result.id) {
+                    for (result in movieResultsPage!!.results) {
                         SearchResult(
                             movie = result,
                             onClickResult = onClickResult,
                         )
                     }
-                    item {
-                        Box(Modifier.height(128.dp))
-                    }
+                    Box(Modifier.height(128.dp))
                 }
             } else {
                 Text(

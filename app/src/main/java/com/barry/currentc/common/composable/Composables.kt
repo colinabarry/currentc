@@ -1,10 +1,12 @@
 package com.barry.currentc.common.composable
 
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,13 +45,20 @@ import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -54,6 +66,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -73,6 +86,7 @@ fun Title(
     modifier: Modifier = Modifier,
     alignRight: Boolean = false,
     hasShadow: Boolean = true,
+    color: Color = MaterialTheme.colorScheme.onBackground
 ) {
     Text(
         text = text,
@@ -80,8 +94,8 @@ fun Title(
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             textAlign = if (alignRight) TextAlign.Right else TextAlign.Left,
-            shadow = Shadow(Black, blurRadius = if (hasShadow) 16f else 0f),
-            color = White,
+            shadow = Shadow(Color(0f, 0f, 0f, 0.5f), blurRadius = if (hasShadow) 16f else 0f),
+            color = color,
 //            brush = Brush.linearGradient(colors = gradientColors)
         ),
         modifier = modifier
@@ -122,7 +136,7 @@ fun PersonTile(
             modifier = modifier
                 .fillMaxWidth()
                 .height(200.dp)
-                .clip(shape = RoundedCornerShape(8.dp))
+                .clip(shape = RoundedCornerShape(16.dp))
                 .clickable { }
         ) {
             Box(
@@ -222,6 +236,104 @@ fun MovieTile(
     }
 }
 
+
+@Composable
+fun RatingBar(
+    modifier: Modifier = Modifier,
+    rating: Float,
+    starSizeDp: Dp,
+    spaceBetween: Dp = 0.dp
+) {
+    var image = ImageBitmap.imageResource(id = R.drawable.ic_star)
+    var imageFull = ImageBitmap.imageResource(id = R.drawable.ic_star_filled)
+    val imageSizePx = starSizeDp.dpToPx().toInt()
+    val imageColor = MaterialTheme.colorScheme.secondary
+
+    image = Bitmap
+        .createScaledBitmap(image.asAndroidBitmap(), imageSizePx, imageSizePx, true)
+        .asImageBitmap()
+    imageFull = Bitmap
+        .createScaledBitmap(imageFull.asAndroidBitmap(), imageSizePx, imageSizePx, true)
+        .asImageBitmap()
+
+    val totalCount = 5
+
+    val height = LocalDensity.current.run { starSizeDp }
+    val width = LocalDensity.current.run { starSizeDp }
+    val space = LocalDensity.current.run { spaceBetween.toPx() }
+    val totalWidth = width * totalCount + spaceBetween * (totalCount - 1)
+
+
+    Box(
+        modifier
+            .width(totalWidth)
+            .height(height)
+            .drawBehind {
+                drawRating(rating, image, imageFull, imageColor, space)
+            })
+}
+
+private fun DrawScope.drawRating(
+    rating: Float,
+    image: ImageBitmap,
+    imageFull: ImageBitmap,
+    imageColor: Color,
+    space: Float
+) {
+
+    val totalCount = 5
+
+    val imageWidth = image.width.toFloat()
+    val imageHeight = size.height
+
+    val reminder = rating - rating.toInt()
+    val ratingInt = (rating - reminder).toInt()
+
+    for (i in 0 until totalCount) {
+
+        val start = imageWidth * i + space * i
+
+        drawImage(
+            image = image,
+            topLeft = Offset(start, 0f),
+            colorFilter = ColorFilter.tint(imageColor)
+        )
+    }
+
+    drawWithLayer {
+        for (i in 0 until totalCount) {
+            val start = imageWidth * i + space * i
+            // Destination
+            drawImage(
+                image = imageFull,
+                topLeft = Offset(start, 0f),
+                colorFilter = ColorFilter.tint(imageColor)
+            )
+        }
+
+        val end = imageWidth * totalCount + space * (totalCount - 1)
+        val start = rating * imageWidth + ratingInt * space
+        val size = end - start
+
+        // Source
+        drawRect(
+            Color.Transparent,
+            topLeft = Offset(start, 0f),
+            size = Size(size, height = imageHeight),
+            blendMode = BlendMode.SrcIn
+        )
+    }
+}
+
+private fun DrawScope.drawWithLayer(block: DrawScope.() -> Unit) {
+    with(drawContext.canvas.nativeCanvas) {
+        val checkPoint = saveLayer(null, null)
+        block()
+        restoreToCount(checkPoint)
+    }
+}
+
+
 @Composable
 fun MovieCarousel(
     title: String,
@@ -239,14 +351,14 @@ fun MovieCarousel(
         )
     )
     Spacer(modifier = Modifier.height(8.dp))
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.clip(RoundedCornerShape(32.dp))
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier
+            .clip(RoundedCornerShape(32.dp))
+            .horizontalScroll(rememberScrollState())
     ) {
         for (result in movieResultsPage.results) {
-            item(key = result.id) {
-                MovieTile(movie = result, onClickResult = onClickMovie)
-            }
+            MovieTile(movie = result, onClickResult = onClickMovie)
         }
     }
 }
@@ -279,6 +391,8 @@ fun SearchResult(
             .onGloballyPositioned { coordinates ->
                 imageOffset = (coordinates.positionInWindow().y / screenHeight)
                     .remap(fromMin = 0f, fromMax = 1f, toMin = -1f, toMax = 1f)
+                    .coerceAtLeast(-1f)
+                    .coerceAtMost(1f)
             }
     ) {
         Box(

@@ -11,8 +11,12 @@ import com.barry.currentc.model.MoneyRecord
 import com.barry.currentc.screens.AddAnnotatedImage
 import com.barry.currentc.screens.AddMoneyRecord
 import com.barry.currentc.screens.Home
+import com.barry.currentc.screens.Login
 import com.barry.currentc.screens.MovieInfo
 import com.barry.currentc.screens.Search
+import com.barry.currentc.screens.Settings
+import com.barry.currentc.screens.SignUp
+import kotlinx.coroutines.runBlocking
 
 enum class Screen {
     Login,
@@ -34,30 +38,56 @@ fun MainView(
         navController = navController,
         startDestination = Screen.Home.name,
 //        startDestination = Screen.Login.name,
+//        startDestination = Screen.Settings.name,
+//        startDestination = Screen.SignUp.name,
 //        startDestination = Screen.Search.name,
 //        startDestination = "${Screen.MovieInfo.name}/{movie}",
 //        startDestination = Screen.AddMoneyRecord.name
+//        startDestination = Screen.AddAnnotatedImage.name
     ) {
         val appState = AppState(navController)
-//        composable(route = Screen.Login.name) {
-//            Login(
-//                onLogin = { navController.navigate(Screen.Home.name) },
-//            )
-//        }
-//        composable(route = Screen.Login.name) {
-//            LoginScreen(openAndPopUp = { route, popUp -> appState.navigateAndPopUp(route, popUp) })
-//        }
-//
-//        composable(route = Screen.SignUp.name) {
-//            SignUpScreen(openAndPopUp = { route, popUp -> appState.navigateAndPopUp(route, popUp) })
-//        }
 
-//        composable(route = Screen.Settings.name) {
-//            SettingsScreen(
-//                restartApp = { route -> appState.navigate(route) },
-//                openScreen = { route -> appState.navigate(route) }
-//            )
-//        }
+        composable(route = Screen.Login.name) {
+            Login(
+                openAndPopUp = { route, popUp -> appState.navigateAndPopUp(route, popUp) },
+                onClickSignIn = { openAndPopUp ->
+                    viewModel.onSignInClick(
+                        openAndPopUp,
+//                        Screen.Settings.name,
+//                        Screen.Login.name
+                    )
+                },
+                onClickForgotPassword = viewModel::onForgotPasswordClick,
+                getEmail = viewModel::getEmail,
+                getPassword = viewModel::getPassword,
+                setEmail = { viewModel.setEmail(it) },
+                setPassword = { viewModel.setPassword(it) }
+            )
+        }
+
+        composable(route = Screen.SignUp.name) {
+            SignUp(
+                openAndPopUp = { route, popUp -> appState.navigateAndPopUp(route, popUp) },
+                onClickSignUp = viewModel::onSignUpClick,
+                getEmail = viewModel::getEmail,
+                getPassword = viewModel::getPassword,
+                getRepeatPassword = viewModel::getRepeatPassword,
+                setEmail = { viewModel.setEmail(it) },
+                setPassword = { viewModel.setPassword(it) },
+                setRepeatPassword = { viewModel.setRepeatPassword(it) }
+            )
+        }
+
+        composable(route = Screen.Settings.name) {
+            Settings(
+                restartApp = { appState.clearAndNavigate(Screen.Home.name) },
+                getIsAnonymous = viewModel::isAnonymousAccount,
+                getUserEmail = viewModel::getCurrentUserEmail,
+                onLoginClick = { appState.navigate(Screen.Login.name) },
+                onSignUpClick = { appState.navigate(Screen.SignUp.name) },
+                onSignOutClick = { runBlocking { viewModel.signOut() } },
+                onDeleteMyAccountClick = { runBlocking { viewModel.deleteAccount() } })
+        }
 
         composable(route = Screen.AddMoneyRecord.name) {
             AddMoneyRecord(
@@ -69,9 +99,11 @@ fun MainView(
 
         composable(route = Screen.AddAnnotatedImage.name) {
             AddAnnotatedImage(
-//                onClickUpload = viewModel::pickImage(),
-//                onUploadSucceeded = appState::popUp(),
-//                movieId = viewModel.currentMovieId,
+                onClickPickImage = viewModel::pickImage,
+                onClickUpload = { annotation ->
+                    viewModel.handleImageUploadResult(annotation)
+                },
+                onBackPressed = { appState.popUp() }
             )
         }
 
@@ -81,6 +113,7 @@ fun MainView(
                 getTopRatedMovies = viewModel::getTopRatedMovies,
                 getNowPlayingMovies = viewModel::getNowPlayingMovies,
                 onClickSearch = { appState.navigate(Screen.Search.name) },
+                onClickSettings = { appState.navigate(Screen.Settings.name) },
                 onClickMovie = { movieId: Int ->
                     appState.navigate("${Screen.MovieInfo.name}/$movieId")
                 }
@@ -114,9 +147,10 @@ fun MainView(
                 getPriceChange = { record: MoneyRecord ->
                     viewModel.getPriceChangeToToday(record)
                 },
-                onPickImagePressed = viewModel::pickImage,
-                getUserImages = { viewModel.getImages(it) },
+                onPickImagePressed = { appState.navigate(Screen.AddAnnotatedImage.name) },
+                getImagesAndAnnotations = { viewModel.getImagesAndAnnotations(it) },
                 onBackButtonPressed = appState::popUp,
+                getIsAnonymous = viewModel::isAnonymousAccount,
                 movieId = backStackEntry.arguments?.getInt("movie")
             )
         }
